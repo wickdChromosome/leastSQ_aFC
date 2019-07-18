@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+module load python/3.6.3
+module load tabix
+
+
+python3 spheus.py --vcf inputs/phASER_GTEx_v8_merged.vcf.gz --expr inputs/clean_expressions.csv.gz --eqtl inputs/samplesdf.tsv --output test_original.tsv --isn 0 --cov inputs/Adipose_Subcutaneous.v8.covariates.txt

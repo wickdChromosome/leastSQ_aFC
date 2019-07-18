@@ -1,0 +1,43 @@
+import pysam
+import pandas as pd
+import sys
+
+#put eqtl data into dataframe
+eqtl_dataf = pd.read_csv(sys.argv[2], sep="\t", index_col=False)
+
+#get list of genes in eqtl file
+genes = eqtl_dataf["gene_id"].values
+
+#get list of variant ids from eqtl file
+eqtl_variant_ids = eqtl_dataf[eqtl_dataf.gene_id.isin(genes)].variant_id
+
+#use list of variant IDS to create easy to parse, small phasing vcf file
+tabix_haplotypes = pysam.Tabixfile(sys.argv[1],"r")
+	
+count = 0
+for variant in eqtl_variant_ids:
+	
+
+	[chrom, pos] = variant.split("_")[:2]
+
+	try:
+	
+		records = tabix_haplotypes.fetch(chrom, int(pos) - 1, int(pos))
+
+	except:
+
+		print("Variant not found: " + str(chrom) + ":" + str(pos) + " in the vcf file")
+		continue
+	
+
+	with open(sys.argv[3],'a+') as f:
+
+		rec = [i+"\n" for i in records]
+
+		f.writelines(rec)
+		count += 1
+		
+		if count > 100:
+			print("count reached")	
+			break
+
