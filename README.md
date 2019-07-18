@@ -1,4 +1,4 @@
-# Spheus -estimate aFCs
+# estimate aFCs using least squares minimization
 
 ## Usage
 spheus --flag1 --flag2
