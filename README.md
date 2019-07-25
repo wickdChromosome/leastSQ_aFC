@@ -12,7 +12,8 @@ spheus --flag1 --flag2
 --vcf The VCF file with phasing data for each variant ID
 --expr The expressions file with expressions data for each individual for each gene
 --eqtl The eqtl file tie 
---isnorm -n
+--isnorm -n Are the expressions normalized already? 1 for yes, 0 for no
+--islog -n Are the expressions log transformed using log2 already? 1 for yes, 0 for no
 --output -o
 ```
 
