@@ -36,6 +36,8 @@ Name, sample_id1, sample_id2..
 Where Name is a column that has the gene ID (such as ENSG00000224533.11), which 
 should be in the same format as the gene IDs in the EQTL file
 
+You can normalize expressions before feeding them into the script using DESEQ2 in R:
+
 ### Normalize counts using DESEQ2
 ```R
 #import library
