@@ -67,7 +67,7 @@ reference allele, ALT is the alternative allele.
 ## Eqtl list
 This file should contain gene IDs, variant IDs that match - it can also contain other stuff, but it needs to contain at least these two columns:
 ```
-gene_id	variant_id other_stuff1 other_stuff2
+gene_id	variant_id other_stuff1 other_stuff2...
 ``` 
 ## Covariate matrix (optional)
 This matrix should contain a feature (such as gender) for each individual. The matrix should be in the format num_individuals x num_features
