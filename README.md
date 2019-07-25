@@ -1,32 +1,37 @@
 # Spheus -estimate aFCs
 
-##Usage
+## Usage
+```
 spheus --flag1 --flag2
+```
 
-###Use flags
+### Use flags
 
-####Required
+#### Required
+```
 --vcf The VCF file with phasing data for each variant ID
 --expr The expressions file with expressions data for each individual for each gene
 --eqtl The eqtl file tie 
 --isnorm -n
 --output -o
+```
 
-####Optional
+#### Optional
 --cov -c
 
 
-##Inputs
+## Inputs
 
-##Gene counts
+## Gene counts
 
 The input gene counts should be in the format:
+```
 Name, sample_id1, sample_id2..
-
+```
 Where Name is a column that has the gene ID (such as ENSG00000224533.11), which 
 should be in the same format as the gene IDs in the EQTL file
 
-###Normalize counts using DESEQ2
+### Normalize counts using DESEQ2
 ```R
 #import library
 library(DESeq2)
@@ -48,14 +53,16 @@ normalized_counts <- counts(dds, normalized=TRUE)
 write.csv(normalized_counts, "result.csv", row.names=FALSE)
 ```
 
-##Haplotypes (phasing data)
-This should be a VCF file in the format:
-#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO  sample1  sample2...
+## Haplotypes (phasing data)
 
+This should be a VCF file in the format:
+```
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO  sample1  sample2...
+```
 where #CHROM is the chr # POS is the position, ID is the variant ID in the format chr1_13550_G_A_b38, REF is the
 reference allele, ALT is the alternative allele. 
 
  
-##Eqtl list
+## Eqtl list
 This file should contain gene IDs, variant IDs that match 
 
