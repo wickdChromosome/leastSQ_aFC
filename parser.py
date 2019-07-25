@@ -24,6 +24,7 @@ def extract_haplotypes( line, haplotype_dict, useful_variants, len_ref):
 
 		return
 
+	#pdb.set_trace()
 
 	var_content = line.rstrip().split("\t")
 
@@ -51,8 +52,8 @@ def extract_haplotypes( line, haplotype_dict, useful_variants, len_ref):
 		colcount = 0
 		for x in var_content[9:]:
 
-			hap1_item = 0
-			hap2_item = 0
+			hap1_item = np.nan
+			hap2_item = np.nan
 
 			if "/" not in x.split(":")[0]:
 
@@ -170,7 +171,6 @@ def get_expressions( useful_genes, expr_file):
 		if isinstance(line, bytes) and not isinstance(line, str):
 
 					line = line.decode()
-		#pdb.set_trace()
 		if line[0] != "#":
 
 			#parse line

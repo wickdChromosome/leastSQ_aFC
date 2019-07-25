@@ -11,8 +11,6 @@ def linear_estimate(h1,h2,expr,cov_dataf):
 
         """
         Use a covariate matrix to make an initial guess at the aFCs
-
-        ERROR RATE HIGH FOR ESTIMATE, NEEDS IMPROVEMENT
         """
 
         #take only the samples that are in the haplotype matrix - this is the order the 
@@ -28,22 +26,7 @@ def linear_estimate(h1,h2,expr,cov_dataf):
         sa = reg.coef_ #the last one is the coef for the variant
         C0 = reg.intercept_ #the error
 
-        #cap afcs
-        for afc in sa:
             
-            if sa[varc] > 6.64:
-
-                sad[var] = 6.64
-
-
-            elif sa[varc] < -6.64:
-
-                sad[var] = 6.64
-
-            else:
-
-                sad[var] = sa[varc]
-
             
         #now store the results in the same matrix, to be passed to the least square optimizer
         cov_dataf = cov_dataf.transpose().append(pd.DataFrame(sa, columns=['covar_coeff'], index=cov_dataf.index).transpose()).transpose()
@@ -75,27 +58,14 @@ def nocovar_linear_estimate(h1,h2,expr):
         sa = reg.coef_ #each coeff is for a different variant
         C0 = reg.intercept_ #the error
 
-        #cut off aFCs at 6.64 for initialization
         sad = {}
 
         varc = 0
         for var in h1.index:
-            if sa[varc] > 6.64:
 
-                sad[var] = 6.64
-
-
-            elif sa[varc] < -6.64:
-
-                sad[var] = 6.64
-
-            else:
-
-                sad[var] = sa[varc]
-
-
+            sad[var] = sa[varc]
             varc += 1
-
+            
         #return the aFCs as well as the C0
         return [sad,C0]
 
@@ -105,7 +75,6 @@ def gene_expression_normalization(gene_expression_df):
         """
         If the option is passed, normalize gene expression matrix
         """
-
         #replace nans
         expr = gene_expression_df.replace('',0).astype(float)
         expr_working = expr.copy()
@@ -159,7 +128,8 @@ def fcn2fit(params,h1,h2,variants,expr,covarlist ):
 
         model = np.log2(2**(dotprod1) + 2**(dotprod2)) + log2_c0 + np.dot(k[k.columns[:-1]].transpose().values , wa) #also add the covar matrix
 
-        error = (model - np.log2(expr + 1))
+        #expressions were log transformed outside function
+        error = (model - expr)
 
         #return squared error
         return error**2
@@ -190,6 +160,7 @@ def nocovar_fcn2fit(params,h1,h2,variants,expr):
         dotprod2 = np.dot(np.array(sa) , np.array(h2))
 
         model = np.log2(2**(dotprod1) + 2**(dotprod2)) + log2_c0 
+        #take the log2 of the expr (np.log2(expr)) if the input expressions were not log transformed!!!
         error = model - expr 
 
 
@@ -197,7 +168,7 @@ def nocovar_fcn2fit(params,h1,h2,variants,expr):
 
 
                         
-def nonlin_solve(haplotype0_df, haplotype1_df, eqtl_dataf, expressions_df ,useful_genes, cov_dataf, neednorm, outname, is_cov):
+def nonlin_solve(haplotype0_df, haplotype1_df, eqtl_dataf, expressions_df ,useful_genes, cov_dataf, neednorm, outname, is_cov, needlog):
 
         """
         Initializes the afcs with a linear fit, then uses those as a basis for the nonlinear fit.
@@ -209,19 +180,30 @@ def nonlin_solve(haplotype0_df, haplotype1_df, eqtl_dataf, expressions_df ,usefu
         eqtl_dataf['linear_log2_aFC'] = np.full(len(eqtl_dataf.index.values),np.nan) 
         eqtl_dataf['linear_c0'] = np.full(len(eqtl_dataf.index.values),np.nan) 
         eqtl_dataf['log2_aFC_c0'] = np.full(len(eqtl_dataf.index.values),np.nan) 
-
+        
         #only use columns where genes are useful
         expressions_df = expressions_df[useful_genes]
+        #replace nans with zeros if they exist in dataset
+        expressions_df = expressions_df.fillna(0).astype(float)
         
         
         #if the user hasn't already normalized the data with deseq2 or another method
-        if neednorm == 0:
-            
-            expressions_df = gene_expression_normalization(expressions_df)
+        if int(neednorm) == 0:
 
+            print("normalizing dataset")
+            expressions_df = gene_expression_normalization(expressions_df)
+        
+        #if the user hasn't already log transformed the data
+        if int(needlog) == 0:
+            
+            print("Log transforming dataset")
+            expressions_df = np.log2(expressions_df + 1)
+        
+
+                
         genecount = 0
         sample_out = False
-
+        
         #if there was a covariant dataframe as input
         if is_cov != 0:
 
@@ -261,56 +243,21 @@ def nonlin_solve(haplotype0_df, haplotype1_df, eqtl_dataf, expressions_df ,usefu
                 #for now, use 0 for initialization
                 #get the initialization values
                 covar = linear_estimate(haplo0_variants.astype(float), haplo1_variants.astype(float), thisgene_expressions.astype(float), cov_dataf)
-
-                #eqtl_dataf.linear_c0[eqtl_dataf.gene_id == gene] = covar['covar_coeff']['C0'] #save c0
-
+                
+                
                 #initalize parameters object
                 params = Parameters()
-
-                #load initialization values into the parameters object, as well as store them in the results df
-                wtf = 0
-
-                #try:
                      
-                    #eqtl_dataf.linear_log2_aFC[(variant == eqtl_dataf.variant_id) & (eqtl_dataf.gene_id == gene)] = covar['covar_coeff'][variant] #coefficient for that variant
-
-                #except:
-                        
-                 #   pdb.set_trace()
-                 #   wtf = 1 
-                 #   continue
+                for variant in haplo0_variants.index.values:
                     
+                    eqtl_dataf.linear_log2_aFC[(variant == eqtl_dataf.variant_id) & (eqtl_dataf.gene_id == gene)] = covar['covar_coeff'][variant] #coefficient for that variant
                     
-                    #add coefficient as new initial value
-                  #  params.add( str(variant), value=covar['covar_coeff'][variant], min=-6.64, max=6.64)
-
-                if wtf == 1:
-                    
-                    continue
-                    
-                params.add('C0', value=covar['covar_coeff']['C0'] )
+                eqtl_dataf.linear_c0[eqtl_dataf.gene_id == gene] = covar['covar_coeff']['C0'] #save c0
                 
-                #add covariate parameters
+                #add coeffs
                 for parameter in covar['covar_coeff'].index:
-                    params.add( str(parameter), value=0 )#$covar['covar_coeff'][parameter])
-
-                '''
-                params = Parameters()
-
-                params.add('C0', value=0 )
-                
-                #add covariate parameters
-                for parameter in cov_dataf.index:
-                    
-                    params.add( str(parameter), value=0 )#$covar['covar_coeff'][parameter])   
-                
-                #add genes 
-                for parameter in haplo0_variants.index.values:
-                    
-                    params.add( str(parameter), value=0 )
-
-                '''
-                    #do the actual minimization 
+                    params.add( str(parameter), value=covar['covar_coeff'][parameter])
+                #do the actual minimization 
                 result = minimize(fcn2fit, params, args=(haplo0_variants.astype(float), haplo1_variants.astype(float), haplo0_variants.index.values, thisgene_expressions.astype(float), [id_cov,covar]),method='leastsq', xtol=0.01, ftol=0.01)
                     
                 #save parameters and results in results df
@@ -322,7 +269,7 @@ def nonlin_solve(haplotype0_df, haplotype1_df, eqtl_dataf, expressions_df ,usefu
                         eqtl_dataf.log2_aFC[(parameter == eqtl_dataf.variant_id) & (eqtl_dataf.gene_id == gene)] = result.params[parameter].value
                         eqtl_dataf.log2_aFC_error[(parameter == eqtl_dataf.variant_id) & (eqtl_dataf.gene_id == gene)] = result.params[parameter].stderr
 
-                    else: #its C0
+                    elif parameter == 'C0': #its C0
                         eqtl_dataf.log2_aFC_c0[eqtl_dataf.gene_id == gene] = result.params[parameter]
 
                 #keep track of genes for notifying the user
@@ -382,9 +329,9 @@ def nonlin_solve(haplotype0_df, haplotype1_df, eqtl_dataf, expressions_df ,usefu
                         pdb.set_trace()
                         
                     #add coefficient as new initial value
-                    params.add( str(variant), value=sa[variant], min=-6.64, max=6.64)
+                    params.add( str(variant), value=0)#sa[variant], min=-6.64, max=6.64)
 
-                params.add('C0', value=c0 )
+                params.add('C0', value=0)#c0 )
 
                 #do the actual minimization 
                 result = minimize(nocovar_fcn2fit, params, args=(haplo0_variants.astype(float), haplo1_variants.astype(float), haplo0_variants.index.values, thisgene_expressions.astype(float)), method='leastsq', xtol=0.01, ftol=0.01)
@@ -410,7 +357,6 @@ def nonlin_solve(haplotype0_df, haplotype1_df, eqtl_dataf, expressions_df ,usefu
                     print("New aFCs out")
                     sample_out = True
                     eqtl_dataf.to_csv(outname + "_prelim", sep='\t')
-
 
         print("Genes processed: " + str(genecount)) 
         eqtl_dataf.to_csv(outname, sep='\t', index=False)

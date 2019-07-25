@@ -119,8 +119,9 @@ def main():
         parser.add_argument("--eqtl", required=True, help="File containing QTL to calculate allelic fold change for. Should contain tab separated columns 'pid' with phenotype (gene) IDs and 'sid' with SNP IDs. Optionally can include the columns 'sid_chr' and 'sid_pos', which will facilitate tabix retrieval of genotypes, greatly reducing runtime.")
         parser.add_argument("--geno", required=False, default="GT", help="Which field in VCF to use as the genotype. By default 'GT' = genotype. Setting to 'DS' will use dosage rounded to the nearest integer (IE 1.75 = 2 = 1|1).")
         parser.add_argument("--output", "--o", required=True, help="Output file")
-        parser.add_argument("--cov", "--c", required=False, help="Covariate matrix")
-        parser.add_argument("--isnorm", "--isn", required=True, help="1 - matrix has been normalized using DESeq2(or another method) | 0 - matrix hasn't been normalized yet")
+        parser.add_argument("--cov", "-c", required=False, help="Covariate matrix")
+        parser.add_argument("--isnorm", "-n", required=True, help="1 - matrix has been normalized using DESeq2(or another method) | 0 - matrix hasn't been normalized yet")
+        parser.add_argument("--islog", "-l", required=True, help="1 - matrix has been taken the log2 of | 0 - matrix hasn't been log transformed yet")
 
 
         #disable warnings
@@ -145,6 +146,8 @@ def main():
         #initialize the optional args 
         cov_dataf = args.cov
         neednorm = args.isnorm
+        needlog = args.islog
+
         outname = args.output
         is_cov = 1
         
@@ -239,8 +242,7 @@ def main():
         haplotype_inds = set(haplotype0_df.columns.values) 
         
         #make sure that there were no additional apostrophes
-        expressions_inds = [x.replace('"',"").replace("'","") for x in expressions_inds]
-        expressions_df.index = expressions_inds
+        expressions_df.index = [x.replace('"',"").replace("'","") for x in expressions_df.index]
         
         #select only useful individuals that are in all datasets
         useful_inds = list(set.intersection(haplotype_inds, expressions_inds))
@@ -248,11 +250,10 @@ def main():
         haplotype1_df = haplotype1_df[useful_inds]
 
         expressions_df = expressions_df[expressions_df.index.isin(useful_inds)]        
-
         """
         Calculate aFCs, then dump the results into a file
         """
-        nonlin_solve(haplotype0_df, haplotype1_df, eqtl_dataf, expressions_df ,useful_genes, cov_dataf, neednorm, outname, is_cov)
+        nonlin_solve(haplotype0_df, haplotype1_df, eqtl_dataf, expressions_df ,useful_genes, cov_dataf, neednorm, outname, is_cov, needlog)
                         
 
 
