@@ -1,8 +1,6 @@
 inputs/*
 logs/*
-simulation
 *prelim
 test_data
-deseq_expressions_adipose_header.csv
 *.swp
 *.swo
