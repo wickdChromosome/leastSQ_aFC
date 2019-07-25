@@ -1,4 +1,7 @@
-# Spheus -estimate aFCs
+# Least-squares aFC
+## Overview
+This script uses a non-least squares fit to calculate allelic fold change. It also calculates the linear approximation for the aFCs for comparison.
+
 
 ## Usage
 ```
