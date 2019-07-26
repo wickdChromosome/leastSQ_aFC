@@ -1,6 +1,5 @@
 import pysam
 import pandas as pd
-import pdb
 import datetime
 import numpy as np
 import os
